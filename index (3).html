@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FarmShift – NASA-powered crop rotation decisions</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#131a16;--panel:#1a221d;--line:#2b362f;--text:#ece8dc;--mute:#8d988f;--acc:#e0914d;--sage:#8fb89c;--red:#b5573a}
+*{box-sizing:border-box;margin:0}html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif}
+a{color:inherit}.w{max-width:1120px;margin:0 auto;padding:0 24px}
+section{padding:72px 0;border-top:1px solid var(--line)}
+.eb{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);font-weight:600;margin-bottom:14px}
+h1{font-size:clamp(40px,6vw,68px);line-height:1.02;letter-spacing:-.03em;font-weight:800}
+h2{font-size:clamp(28px,4vw,40px);line-height:1.1;letter-spacing:-.02em;font-weight:700}
+.sub{color:var(--mute);max-width:560px;margin-top:12px}
+.g{color:var(--sage)}.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px}
+.grid{display:grid;gap:16px}.c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:repeat(3,1fr)}.c4{grid-template-columns:repeat(4,1fr)}.c6{grid-template-columns:repeat(6,1fr)}
+header{position:sticky;top:0;z-index:20;background:#131a16ee;backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+header .w{display:flex;justify-content:space-between;align-items:center;height:60px}
+.logo{display:flex;gap:10px;align-items:center;font-weight:700}.logo i{width:26px;height:26px;border:1px solid var(--acc);color:var(--acc);display:grid;place-items:center;font-style:normal;font-size:13px}
+.pill{font-size:11px;border:1px solid var(--line);padding:4px 10px;border-radius:99px;color:var(--mute)}
+.pill b{color:var(--acc)}
+.tags{display:flex;gap:8px;margin-top:22px;flex-wrap:wrap}.tags span{font-size:11px;border:1px solid var(--line);padding:4px 10px;color:var(--mute)}
+.hero{display:grid;grid-template-columns:1.3fr 1fr;gap:48px;align-items:center;padding:80px 0}
+.btn{background:var(--acc);color:#1a1209;font-weight:700;border:0;padding:12px 18px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border-radius:3px}
+.btn:hover{filter:brightness(1.1)}
+.opt{background:#161d18;border:1px solid var(--line);color:var(--text);padding:14px;text-align:left;cursor:pointer;border-radius:3px;font:inherit;flex:1}
+.opt small{display:block;color:var(--mute);font-size:11px}.opt.on{border-color:var(--acc);background:#2a2217}
+.row{display:flex;gap:10px}.q{font-size:20px;font-weight:600;margin:6px 0 14px}
+.lab{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+input[type=text]{flex:1;background:#161d18;border:1px solid var(--line);color:var(--text);padding:12px;font:inherit;border-radius:3px;min-width:0}
+.sr{background:#161d18;border:1px solid var(--line);margin-top:6px;border-radius:3px}.sr div{padding:10px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--line)}.sr div:hover{background:#222c25}
+.stat{background:var(--panel);border:1px solid var(--line);padding:18px}.stat b{display:block;font-size:30px;font-weight:700;margin:6px 0 2px;letter-spacing:-.02em}.stat small{color:var(--mute);font-size:11px}
+.map{height:360px;border:1px solid var(--line);border-radius:4px;background:#0c100e}
+.bar{height:4px;background:#2b362f;border-radius:2px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:var(--acc)}
+.rec{display:grid;grid-template-columns:70px 1fr 90px;gap:16px;align-items:center;padding:18px 20px;border:1px solid var(--line);background:var(--panel);border-radius:4px;margin-bottom:12px}
+.rec.top{border-color:var(--acc)}.sc{font-size:34px;font-weight:700;color:var(--acc);text-align:right}.sc small{font-size:11px;color:var(--mute)}
+.mini{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:10px;font-size:11px;color:var(--mute)}
+.tr{padding:14px 0;border-bottom:1px solid var(--line);font-size:13px}.tr b{display:block;font-size:14px}.tr span{color:var(--mute)}
+.ch{height:260px;position:relative}.st{padding:20px;border:1px solid var(--line);background:var(--panel);font-size:13px;color:var(--mute)}.st b{display:block;color:var(--text);font-size:15px;margin-bottom:6px}
+.tip{position:relative}.tip:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:0;background:#0f1512;border:1px solid var(--acc);padding:9px 11px;font-size:12px;line-height:1.45;color:var(--text);width:max-content;max-width:230px;z-index:30;border-radius:4px;box-shadow:0 8px 24px #0009;pointer-events:none;text-transform:none;letter-spacing:0;font-weight:400}
+footer{border-top:1px solid var(--line);padding:24px 0;color:var(--mute);font-size:12px}
+@media(max-width:860px){.hero,.c2,.c3,.c4{grid-template-columns:1fr}.c6{grid-template-columns:repeat(2,1fr)}.row{flex-wrap:wrap}.rec{grid-template-columns:40px 1fr 70px}}
+</style></head><body>
+<header><div class="w"><div class="logo"><i>F</i><div>FarmShift<div class="lab" style="font-size:8px;font-weight:400">Crop Data · Agriculture</div></div></div><span class="pill"><b>●</b> NASA Space Apps 2026</span></div></header>
+
+<div class="w hero">
+ <div><div class="eb">Field shift · Adapting farms with NASA data</div>
+ <h1>Turn Earth observations into <span class="g">smarter crop rotations.</span></h1>
+ <p class="sub">FarmShift helps farmers compare crop rotation strategies against changing temperature, rainfall, water availability, soil conditions and their own priorities.</p>
+ <div class="tags"><span>NASA Earth data</span><span>Climate signals</span><span>Decision intelligence</span></div></div>
+ <div class="card"><div class="row" style="justify-content:space-between"><span class="lab">Data observation</span><span class="pill" id="hStatus">● Idle</span></div>
+ <h3 style="margin:14px 0 4px">NASA POWER</h3><p style="color:var(--mute);font-size:12px;margin-bottom:16px">Environmental conditions retrieved for the selected location.</p>
+ <div class="grid c3"><div class="stat"><span class="lab">Temp</span><b style="font-size:20px" id="hT">–</b></div><div class="stat"><span class="lab">Rain</span><b style="font-size:20px" id="hP">–</b></div><div class="stat"><span class="lab">Water stress</span><b style="font-size:20px" id="hW">–</b></div></div></div>
+</div>
+
+<section><div class="w"><div class="grid c2" style="align-items:start"><div><div class="eb">The farm problem</div><h2>Climate changes the decision.</h2><p class="sub">Farmers are not short of crop choices. They are short of a clear way to compare those choices against changing field conditions.</p></div>
+<div class="grid c3"><div class="card"><div class="lab">01</div><h4 style="margin:8px 0">Climate variability</h4><p class="sub" style="font-size:12px">Temperature and rainfall patterns can break crop plans.</p></div><div class="card"><div class="lab">02</div><h4 style="margin:8px 0">Water pressure</h4><p class="sub" style="font-size:12px">Water availability changes the practical attractiveness of options.</p></div><div class="card"><div class="lab">03</div><h4 style="margin:8px 0">Soil resilience</h4><p class="sub" style="font-size:12px">Rotations must consider longer-term soil performance.</p></div></div></div></div></section>
+
+<section id="farm"><div class="w"><div class="eb">01 · Define the farm</div><h2>Tell FarmShift what matters.</h2><p class="sub" style="margin-bottom:28px">Select a location, farm profile and decision priority. The same conditions will then be used to compare every rotation.</p>
+<div class="grid c2">
+ <div class="card"><div class="lab">Location</div><div class="q">Where is the farm?</div><div class="row"><input type="text" id="loc" value="City of London, Greater London, England, United Kingdom"><button class="btn" id="sBtn">Search</button></div><div class="sr" id="sr" hidden></div><p class="lab" id="coord" style="margin-top:10px"></p></div>
+ <div class="card"><div class="lab">Soil</div><div class="q">What is the soil profile?</div><div class="row" id="soil"><button class="opt on" data-v="sandy">Sandy<small>Fast drainage</small></button><button class="opt" data-v="clay">Clay<small>Higher retention</small></button><button class="opt" data-v="loam">Loam<small>Balanced profile</small></button></div></div>
+ <div class="card"><div class="lab">Water</div><div class="q">How available is water?</div><div class="row" id="water"><button class="opt on" data-v="low">Low<small>Water constrained</small></button><button class="opt" data-v="medium">Medium<small>Some irrigation</small></button><button class="opt" data-v="high">High<small>Reliable supply</small></button></div></div>
+ <div class="card"><div class="lab">Farmer priority</div><div class="q">What matters most?</div><div class="row" id="prio"><button class="opt on" data-v="water">Water<small>Conservation</small></button><button class="opt" data-v="soil">Soil<small>Recovery</small></button><button class="opt" data-v="heat">Heat<small>Resilience</small></button><button class="opt" data-v="balanced">Balanced<small>Even weights</small></button></div></div>
+</div>
+<div class="card row" style="justify-content:space-between;align-items:center;margin-top:16px"><div><div class="lab">Current priority</div><b id="curP">Water conservation</b></div><button class="btn" id="run">Run FarmShift analysis</button></div></div></section>
+
+<section><div class="w"><div class="eb">02 · Earth observation</div><h2>See the place before reading the score.</h2><p class="sub" style="margin-bottom:28px">FarmShift combines geographic context with NASA imagery so the analysis remains connected to a real place on Earth.</p>
+<div class="grid c2"><div><div class="lab" id="mapName" style="margin-bottom:8px">Location map</div><iframe class="map" id="gmap" title="Google Map of the farm location" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade" style="width:100%;display:block"></iframe></div><div><div class="lab" style="margin-bottom:8px">NASA GIBS · MODIS satellite context</div><div class="map" id="sat"></div></div></div>
+<div class="card" style="margin-top:16px"><div class="lab">Soil context</div><b id="soilT">Sandy soil</b><p class="sub" id="soilD" style="max-width:none"></p></div></div></section>
+
+<section><div class="w"><div class="eb">03 · NASA conditions</div><h2>What NASA sees around this farm.</h2><p class="sub" id="range" style="margin-bottom:28px">Run the analysis to retrieve data.</p>
+<div class="grid c6" id="stats"></div><div class="st" style="margin:16px 0"><b>NASA POWER · Earth observation evidence</b><span id="src">Awaiting retrieval.</span></div>
+<div class="grid c2"><div class="card"><div class="lab">Temperature</div><b>Monthly temperature context (°C)</b><div class="ch"><canvas id="cT"></canvas></div></div><div class="card"><div class="lab">Rainfall</div><b>Monthly precipitation context (mm/day)</b><div class="ch"><canvas id="cP"></canvas></div></div></div></div></section>
+
+<section><div class="w"><div class="eb">04 · Decision intelligence</div><h2>Why did FarmShift choose this?</h2><p class="sub" style="margin-bottom:28px">The intelligence layer interprets the transparent scoring model instead of hiding the decision behind a black box.</p>
+<div class="grid c2"><div class="card"><div class="lab">Strongest match</div><h3 id="wName" style="margin:8px 0">–</h3><p id="wWhy" class="sub" style="max-width:none"></p><div style="margin-top:18px"><span class="lab">Model score</span> <b id="wSc" style="font-size:34px;color:var(--acc)">–</b><div class="bar"><i id="wBar"></i></div></div></div><div class="card"><div class="lab">Evidence trace</div><div id="trace"></div></div></div></div></section>
+
+<section><div class="w"><div class="eb">05 · Rotation explorer</div><h2>Four strategies. One farm context.</h2><p class="sub" style="margin-bottom:28px">Every option is evaluated against the same NASA conditions and farmer-selected profile.</p>
+<div class="grid c2" style="align-items:start"><div id="list"></div><div class="card"><div class="lab">Overall comparison</div><div class="ch" style="height:300px"><canvas id="cC"></canvas></div></div></div>
+<div class="card grid c2" style="margin-top:24px;align-items:center"><div><div class="lab">Recommendation profile</div><h3 id="rN" style="margin:6px 0"></h3><p class="sub" id="rC"></p></div><div class="ch" style="height:280px"><canvas id="cR"></canvas></div></div>
+<div class="card row" style="justify-content:space-between;align-items:center;margin-top:16px"><div><div class="lab">Explainable recommendation</div><b id="exH"></b><p class="sub" id="exP" style="max-width:720px"></p></div><div class="sc"><span id="exS"></span><small>/100</small></div></div></div></section>
+
+<section id="forecast"><div class="w"><div class="eb">06 · Forecast</div><h2>What the next 16 days look like.</h2><p class="sub" id="fcSrc" style="margin-bottom:28px">Loading live forecast…</p>
+<div class="grid c6" id="fcStats"></div>
+<div class="grid c2" style="margin-top:16px"><div class="card"><div class="lab">Weather outlook</div><b>Daily temperature and rainfall</b><div class="ch" style="height:300px"><canvas id="fT"></canvas></div></div><div class="card"><div class="lab">Water balance</div><b>Rainfall minus crop water demand (mm/day)</b><div class="ch" style="height:300px"><canvas id="fB"></canvas></div></div></div></div></section>
+<section id="solutions"><div class="w"><div class="eb">07 · Solutions</div><h2>What to do this week.</h2><p class="sub" style="margin-bottom:28px">Actions are generated from the live forecast, NASA observations and your farm profile. Each one shows the numbers behind it.</p><div class="grid c2" id="solList"></div></div></section>
+<section><div class="w"><div class="eb">How FarmShift thinks</div><h2>A transparent decision pipeline.</h2><div class="grid c4" style="margin-top:28px"><div class="card"><div class="lab">01</div><b>NASA Earth data</b><p class="sub" style="font-size:12px">Environmental observations for the selected location.</p></div><div class="card"><div class="lab">02</div><b>Farm profile</b><p class="sub" style="font-size:12px">Soil, water and priority chosen by the farmer.</p></div><div class="card"><div class="lab">03</div><b>Rotation model</b><p class="sub" style="font-size:12px">Four strategies scored on explicit criteria.</p></div><div class="card"><div class="lab">04</div><b>Decision intelligence</b><p class="sub" style="font-size:12px">The strongest option explained with evidence.</p></div></div>
+<div class="grid c2" style="margin-top:40px"><div><div class="eb">Scientific honesty</div><h2 style="font-size:28px">What FarmShift does — and does not — claim.</h2></div><p class="sub" style="max-width:none">FarmShift is a comparative decision-support prototype. NASA environmental observations provide context, while the rotation model uses simplified crop characteristics and farm inputs. The result is an explainable comparison, not a guaranteed yield prediction or a substitute for local agronomic advice.</p></div></div></section>
+<footer><div class="w row" style="justify-content:space-between"><span><b>FarmShift</b> · Farm Data × Agriculture</span><span>NASA POWER · NASA GIBS · Google Maps</span></div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const S={lat:51.5156,lon:-0.0919,name:'City of London, Greater London, England, United Kingdom',soil:'sandy',water:'low',prio:'water'};
+const SOIL={sandy:['Sandy soil','Sandy soils usually drain quickly and may retain less available water. Water-aware rotation choices can therefore become more important.',{w:-8,s:-4}],clay:['Clay soil','Clay soils hold water longer but warm slowly and compact easily, favouring deep-rooted soil-building crops.',{w:6,s:2}],loam:['Loam soil','Loam balances drainage and retention, giving most rotations a stable base.',{w:4,s:8}]};
+const PL={water:'Water conservation',soil:'Soil recovery',heat:'Heat resilience',balanced:'Balanced resilience'};
+const WT={water:{w:.45,s:.2,h:.15,c:.2},soil:{w:.2,s:.45,h:.15,c:.2},heat:{w:.15,s:.2,h:.45,c:.2},balanced:{w:.25,s:.25,h:.25,c:.25}};
+const STR=[{n:'Water Saver',r:'Wheat → Mung Bean',b:{w:90,s:60,h:55,c:60},ti:14},{n:'Heat Resilience',r:'Cotton → Sorghum',b:{w:60,s:50,h:92,c:60},ti:25},{n:'Soil Recovery',r:'Maize → Chickpea',b:{w:50,s:92,h:55,c:65},ti:20},{n:'Balanced Resilience',r:'Rice → Lentil',b:{w:65,s:70,h:65,c:75},ti:20}];
+let D=null,ch={};
+function pick(id,k){$(id).onclick=e=>{const b=e.target.closest('.opt');if(!b)return;[...$(id).children].forEach(x=>x.classList.remove('on'));b.classList.add('on');S[k]=b.dataset.v;sync()}}
+pick('soil','soil');pick('water','water');pick('prio','prio');
+function sync(){$('curP').textContent=PL[S.prio];const s=SOIL[S.soil];$('soilT').textContent=s[0];$('soilD').textContent=s[1];$('coord').textContent=`Lat ${S.lat.toFixed(4)} · Lon ${S.lon.toFixed(4)}`}
+const GMAPS_KEY=new URLSearchParams(location.search).get('gkey')||'PASTE_YOUR_GOOGLE_MAPS_API_KEY';
+let useG=false,gm,gmk,geo;
+function showResults(list){$('sr').hidden=false;$('sr').innerHTML=list.length?'':'<div>No places found. Try a nearby town.</div>';
+ list.forEach(p=>{const d=document.createElement('div');d.textContent=p.name;d.onclick=()=>{S.lat=p.lat;S.lon=p.lon;S.name=p.name;$('loc').value=p.name;$('sr').hidden=true;sync();moveMaps()};$('sr').append(d)})}
+$('sBtn').onclick=async()=>{const q=$('loc').value.trim();if(!q)return;$('sr').hidden=false;$('sr').innerHTML='<div>Searching…</div>';
+ try{if(useG){const r=await geo.geocode({address:q});showResults(r.results.slice(0,5).map(x=>({name:x.formatted_address,lat:x.geometry.location.lat(),lon:x.geometry.location.lng()})))}
+ else{const r=await(await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&q='+encodeURIComponent(q))).json();showResults(r.map(p=>({name:p.display_name,lat:+p.lat,lon:+p.lon})))}}
+ catch(e){$('sr').innerHTML='<div>Search failed'+(useG?' (check that the Geocoding API is enabled for your key)':'')+'. Try again.</div>'}};
+$('loc').onkeydown=e=>{if(e.key==='Enter')$('sBtn').click()};
+let m2,sm;
+function gsrc(){return `https://maps.google.com/maps?q=${S.lat},${S.lon}&z=10&t=m&output=embed`}
+function refreshMap(){if(useG){const c={lat:S.lat,lng:S.lon};gm.setCenter(c);gm.setZoom(10);gmk.setPosition(c)}else $('gmap').src=gsrc()}
+function initMaps(){
+ if(useG){const el=document.createElement('div');el.className='map';el.id='gmap';$('gmap').replaceWith(el);const c={lat:S.lat,lng:S.lon};
+  gm=new google.maps.Map(el,{center:c,zoom:10,streetViewControl:false});gmk=new google.maps.Marker({position:c,map:gm});
+  gm.addListener('click',async e=>{S.lat=e.latLng.lat();S.lon=e.latLng.lng();try{const r=await geo.geocode({location:e.latLng});S.name=r.results[0]?.formatted_address||'Selected point'}catch(x){S.name='Selected point'}$('loc').value=S.name;sync();moveMaps()})}
+ else $('gmap').src=gsrc();
+ m2=L.map('sat').setView([S.lat,S.lon],6);const d=new Date(Date.now()-3*864e5).toISOString().slice(0,10);
+ L.tileLayer(`https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/${d}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`,{maxNativeZoom:9,attribution:'NASA GIBS · MODIS '+d}).addTo(m2);sm=L.marker([S.lat,S.lon]).addTo(m2)}
+function moveMaps(){refreshMap();m2.setView([S.lat,S.lon],6);sm.setLatLng([S.lat,S.lon]);$('mapName').textContent=S.name}
+const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+async function load(){$('hStatus').textContent='● Loading';
+ const p='T2M,T2M_MAX,PRECTOTCORR,RH2M,WS2M,ALLSKY_SFC_SW_DWN';const y=new Date().getFullYear();
+ try{const u=`https://power.larc.nasa.gov/api/temporal/monthly/point?parameters=${p}&community=AG&longitude=${S.lon}&latitude=${S.lat}&start=${y-1}&end=${y}&format=JSON`;
+ const j=await(await fetch(u)).json();const P=j.properties.parameter;
+ const keys=Object.keys(P.T2M).filter(k=>!k.endsWith('13')&&P.T2M[k]>-900).slice(-12);
+ const g=n=>keys.map(k=>P[n][k]);
+ D={keys,t:g('T2M'),tm:g('T2M_MAX'),p:g('PRECTOTCORR'),rh:g('RH2M'),ws:g('WS2M'),sw:g('ALLSKY_SFC_SW_DWN'),live:true}}
+ catch(e){const k=[];const y0=y-1;for(let i=0;i<12;i++)k.push(`${y0}${String(i+1).padStart(2,'0')}`);const la=Math.abs(S.lat),base=28-la*.45;
+ const f=i=>Math.sin((i-3)/12*6.283)*(S.lat<0?-1:1);
+ D={keys:k,t:k.map((_,i)=>base+f(i)*(6+la*.1)),tm:k.map((_,i)=>base+4+f(i)*(6+la*.1)),p:k.map((_,i)=>Math.max(.1,2-f(i)*.8+(30-la)*.02)),rh:k.map(()=>60),ws:k.map(()=>3.5),sw:k.map((_,i)=>5+f(i)*2),live:false}}
+ render();loadForecast()}
+/*SOL-START*/
+const fd=d=>new Date(d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+function buildSolutions(f,c){const n=7,sm=a=>a.slice(0,n).reduce((x,y)=>x+y,0),r7=sm(f.rain),e7=sm(f.et0),bal=r7-e7,out=[];
+ const idx=(a,fn)=>a.slice(0,n).map((v,i)=>[v,i]).filter(x=>fn(x[0])).map(x=>x[1]);
+ if(bal<-5){const lo=f.et0.slice(0,n).map((v,i)=>[v,i]).sort((a,b)=>a[0]-b[0]).slice(0,2).map(x=>fd(f.dates[x[1]]));
+  out.push({l:'act',t:'Irrigate: about '+Math.round(-bal)+' mm this week',d:({sandy:'Split into 3–4 light applications because sandy soil drains fast.',clay:'Use 1–2 deeper applications; clay holds water longer.',loam:'Use 2–3 moderate applications.'})[c.soil]+(c.water==='low'?' Water is limited, so prefer the lowest-demand days: '+lo.join(' and ')+'.':''),w:'7-day forecast rain '+r7.toFixed(1)+' mm vs crop reference demand (ET₀) '+e7.toFixed(1)+' mm.'})}
+ else out.push({l:'ok',t:'No extra irrigation needed this week',d:'Forecast rain covers crop water demand for the next 7 days.',w:'7-day forecast rain '+r7.toFixed(1)+' mm vs crop reference demand (ET₀) '+e7.toFixed(1)+' mm.'});
+ const hot=Math.max(...f.tmax.slice(0,n)),hd=fd(f.dates[f.tmax.indexOf(hot)]);
+ out.push(hot>=35?{l:'act',t:'Protect crops from extreme heat',d:'Mulch, irrigate early morning or evening, and avoid transplanting or sowing on hot days.',w:'Peak forecast temperature '+hot.toFixed(1)+'°C on '+hd+'.'}:hot>=30?{l:'watch',t:'Watch for heat stress',d:'Check soil moisture daily and keep irrigation off the midday hours.',w:'Peak forecast temperature '+hot.toFixed(1)+'°C on '+hd+'.'}:{l:'ok',t:'Heat risk is low',d:'No heat stress expected in the next 7 days.',w:'Peak forecast temperature '+hot.toFixed(1)+'°C.'});
+ const cold=Math.min(...f.tmin.slice(0,n));
+ if(cold<=5)out.push({l:cold<=2?'act':'watch',t:cold<=2?'Frost protection needed':'Cold nights ahead',d:'Cover young plants and delay sowing of frost-sensitive crops.',w:'Lowest forecast night temperature '+cold.toFixed(1)+'°C on '+fd(f.dates[f.tmin.indexOf(cold)])+'.'});
+ const wet=idx(f.rain,v=>v>=10),win=f.rain.slice(0,n).findIndex((v,i)=>v<1&&f.wind[i]<20);
+ if(wet.length)out.push({l:'watch',t:'Delay fertiliser and spraying on wet days',d:'Heavy rain can wash nutrients away. '+(c.soil==='clay'?'Clay soils may waterlog, so check drainage.':'Apply after the rain.'),w:'Rain of 10 mm or more forecast on '+wet.map(i=>fd(f.dates[i])+' ('+f.rain[i].toFixed(0)+' mm)').join(', ')+'.'});
+ if(win>=0)out.push({l:'ok',t:'Best field-work window: '+fd(f.dates[win]),d:'Dry and calm, good for spraying, sowing or harvesting.',w:'Forecast rain '+f.rain[win].toFixed(1)+' mm, wind up to '+f.wind[win].toFixed(0)+' km/h.'});
+ const wd=idx(f.wind,v=>v>=30);if(wd.length)out.push({l:'watch',t:'Avoid spraying in strong wind',d:'Spray drift and evaporation losses are high.',w:'Wind of 30 km/h or more forecast on '+wd.map(i=>fd(f.dates[i])+' ('+f.wind[i].toFixed(0)+' km/h)').join(', ')+'.'});
+ out.push({l:'ok',t:'Soil care for '+c.soil+' soil',d:({sandy:'Add compost or mulch to hold water and nutrients.',clay:'Avoid working wet soil; add organic matter to improve structure.',loam:'Maintain organic matter and avoid compaction.'})[c.soil],w:'Farm profile: '+c.soil+' soil, '+c.water+' water availability.'});
+ if(c.top)out.push({l:'ok',t:'Rotation to plan: '+c.top.r,d:c.top.n+' is the strongest match for the '+c.prioLabel.toLowerCase()+' priority.',w:'Model score '+c.top.sc.tot+'/100 using NASA POWER conditions.'});
+ return out}
+/*SOL-END*/
+let FC=null,TOPR=null;
+async function loadForecast(){$('fcSrc').textContent='Loading live forecast…';
+ try{const u=`https://api.open-meteo.com/v1/forecast?latitude=${S.lat}&longitude=${S.lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,et0_fao_evapotranspiration,wind_speed_10m_max&forecast_days=16&timezone=auto`;
+ const r=await fetch(u);if(!r.ok)throw 0;const j=(await r.json()).daily;
+ FC={dates:j.time,tmax:j.temperature_2m_max,tmin:j.temperature_2m_min,rain:j.precipitation_sum,prob:j.precipitation_probability_max,et0:j.et0_fao_evapotranspiration,wind:j.wind_speed_10m_max};renderFC()}
+ catch(e){FC=null;$('fcSrc').textContent='Live forecast could not be loaded (Open-Meteo unreachable). Check your connection and press Run FarmShift analysis again.';$('fcStats').innerHTML='';$('solList').innerHTML='<div class="st">Solutions need the live forecast. Nothing is estimated or made up.</div>'}}
+function renderFC(){const f=FC,a7=x=>x.slice(0,7),sum=x=>a7(x).reduce((p,q)=>p+q,0),bal=sum(f.rain)-sum(f.et0);
+ $('fcSrc').textContent=`Live data from Open-Meteo for ${S.name.split(',')[0]} · ${fd(f.dates[0])} to ${fd(f.dates.at(-1))}. Stats cover the next 7 days.`;
+ const T=['Total forecast rainfall.','Average of the daily maximum temperatures.','Reference evapotranspiration (FAO-56): how much water a reference crop would use.','Rainfall minus ET₀. Negative means crops need irrigation.','Hottest forecast day.','Strongest forecast wind gust day.'];
+ $('fcStats').innerHTML=[['7-day rain',sum(f.rain).toFixed(1)+' mm','forecast total'],['Avg max temp',(sum(f.tmax)/7).toFixed(1)+'°C','7-day average'],['Crop water demand',sum(f.et0).toFixed(1)+' mm','ET₀ 7-day total'],['Water balance',(bal>0?'+':'')+bal.toFixed(1)+' mm',bal<-5?'deficit':'surplus / even'],['Peak heat',Math.max(...a7(f.tmax)).toFixed(1)+'°C','next 7 days'],['Peak wind',Math.max(...a7(f.wind)).toFixed(0)+' km/h','next 7 days']].map((x,i)=>`<div class="stat tip" data-tip="${T[i]}"><span class="lab">${x[0]}</span><b>${x[1]}</b><small>${x[2]}</small></div>`).join('');
+ const L=f.dates.map(fd);if(ch.fT)ch.fT.destroy();if(ch.fB)ch.fB.destroy();
+ ch.fT=new Chart($('fT'),{data:{labels:L,datasets:[{type:'line',label:'Max °C',data:f.tmax,borderColor:'#e0914d',backgroundColor:'#e0914d',tension:.3,yAxisID:'y',pointHoverRadius:7},{type:'line',label:'Min °C',data:f.tmin,borderColor:'#8fb89c',backgroundColor:'#8fb89c',tension:.3,yAxisID:'y',pointHoverRadius:7},{type:'bar',label:'Rain mm',data:f.rain,backgroundColor:'#b5573acc',hoverBackgroundColor:'#e0914d',yAxisID:'y1'}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{title:{display:true,text:'°C'}},y1:{position:'right',grid:{display:false},title:{display:true,text:'mm'}}},plugins:{legend:{labels:{boxWidth:10}},tooltip:{callbacks:{title:i=>'📅 '+i[0].label,afterBody:i=>{const k=i[0].dataIndex;return[' Rain chance: '+f.prob[k]+'%',' Crop water demand: '+f.et0[k].toFixed(1)+' mm',' Wind: '+f.wind[k].toFixed(0)+' km/h']}}}}}});
+ const B=f.rain.map((v,i)=>+(v-f.et0[i]).toFixed(2));
+ ch.fB=new Chart($('fB'),{type:'bar',data:{labels:L,datasets:[{data:B,backgroundColor:B.map(v=>v<0?'#b5573a':'#8fb89c'),hoverBackgroundColor:'#e0914d'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>'💧 '+i[0].label,label:i=>' Balance: '+i.parsed.y+' mm',afterBody:i=>{const k=i[0].dataIndex;return[' Rain: '+f.rain[k].toFixed(1)+' mm',' Crop demand (ET₀): '+f.et0[k].toFixed(1)+' mm']},footer:i=>i[0].parsed.y<0?'Deficit: irrigation may be needed':'Surplus: no irrigation needed'}}}}});
+ renderSol()}
+function renderSol(){if(!FC)return;const c={soil:S.soil,water:S.water,prioLabel:PL[S.prio],top:TOPR};
+ $('solList').innerHTML=buildSolutions(FC,c).map(x=>`<div class="card" style="border-left:3px solid ${x.l==='act'?'#b5573a':x.l==='watch'?'#e0914d':'#8fb89c'}"><div class="lab" style="color:${x.l==='act'?'#d9775a':x.l==='watch'?'#e0914d':'#8fb89c'}">${x.l==='act'?'Action needed':x.l==='watch'?'Keep watch':'On track'}</div><b style="font-size:17px;display:block;margin:6px 0">${x.t}</b><p class="sub" style="margin:0 0 10px;max-width:none">${x.d}</p><div class="lab">Based on: <span style="text-transform:none;letter-spacing:0">${x.w}</span></div></div>`).join('')}
+const fmt=k=>`${k.slice(0,4)}-${k.slice(4)}`;
+function mk2(id,type,labels,data,color,opt={}){if(ch[id])ch[id].destroy();const c=Chart.defaults;c.color='#8d988f';c.borderColor='#2b362f';Object.assign(c.plugins.tooltip,{backgroundColor:'#0f1512',borderColor:'#e0914d',borderWidth:1,padding:12,cornerRadius:4,titleColor:'#e0914d',bodyColor:'#ece8dc',footerColor:'#8d988f',titleFont:{weight:'700',size:13},bodySpacing:5,boxPadding:4});c.interaction={mode:'index',intersect:false};
+ ch[id]=new Chart($(id),{type,data:{labels,datasets:[{data,borderColor:color,backgroundColor:type==='line'?color:color+'cc',tension:.35,...(opt.ds||{})}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},...(opt.o||{})}})}
+function score(s){const A=D,t=avg(A.t),tm=avg(A.tm),pr=avg(A.p),so=SOIL[S.soil][2],av={low:.25,medium:.55,high:.85}[S.water];
+ const need=1-s.b.w/100,w=Math.max(0,Math.min(100,100*(1-Math.max(0,need-av))+so.w+(pr>2?8:pr<1?-8:0)));
+ const h=Math.max(0,Math.min(100,tm>30?s.b.h:50+s.b.h*.4));const so2=Math.max(0,Math.min(100,s.b.s+so.s));
+ const c=Math.max(0,100-Math.abs(t-s.ti)*3);const W=WT[S.prio];
+ return{w:Math.round(w),s:Math.round(so2),h:Math.round(h),c:Math.round(c),tot:Math.round(w*W.w+so2*W.s+h*W.h+c*W.c)}}
+function render(){const A=D,t=avg(A.t),tm=avg(A.tm),pr=avg(A.p),ws=avg(A.ws),rh=avg(A.rh),sw=avg(A.sw);
+ const stress=pr<1?'High':pr<2.2?'Medium':'Low';
+ $('hStatus').textContent=A.live?'● Live · NASA POWER':'● Offline estimate';$('hT').textContent=t.toFixed(2)+'°C';$('hP').textContent=pr.toFixed(2)+' mm';$('hW').textContent=stress;
+ $('range').textContent=`Data range: ${fmt(A.keys[0])} to ${fmt(A.keys.at(-1))}`;
+ const TIPS=['Average air temperature at 2 m over the last 12 months (NASA POWER T2M).','Average of the monthly maximum temperatures. High values signal heat stress.','Average daily rainfall. Below 1 mm/day suggests dry conditions.','Average relative humidity. Low humidity raises crop water demand.','Average wind speed at 2 m. Strong wind increases evaporation.','Average sunlight reaching the ground. More energy means more growth and more water use.'];
+ $('stats').innerHTML=[['Mean temperature',t.toFixed(2)+'°C','12-mo average'],['Max temperature',tm.toFixed(2)+'°C','12-mo average'],['Precipitation',pr.toFixed(2),'mm/day avg'],['Humidity',rh.toFixed(2)+'%','relative'],['Wind speed',ws.toFixed(2),'m/s'],['Solar radiation',sw.toFixed(2),'kWh/m²/day']].map((x,n)=>`<div class="stat tip" data-tip="${TIPS[n]}"><span class="lab">${x[0]}</span><b>${x[1]}</b><small>${x[2]}</small></div>`).join('');
+ $('src').textContent=A.live?'Retrieved live from the NASA POWER monthly API (AG community) for the selected coordinates.':'NASA POWER could not be reached, so a latitude-based estimate is shown. Reconnect and run again for real observations.';
+ const L=A.keys.map(fmt);mk2('cT','line',L,A.t,'#e0914d',{ds:{pointRadius:3,pointHoverRadius:8,fill:false},o:{plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>'📅 '+i[0].label,label:i=>' Mean temperature: '+i.parsed.y.toFixed(1)+'°C',afterBody:i=>{const k=i[0].dataIndex;return[' Max temperature: '+A.tm[k].toFixed(1)+'°C',' Humidity: '+A.rh[k].toFixed(0)+'%',' Wind: '+A.ws[k].toFixed(1)+' m/s',' Solar: '+A.sw[k].toFixed(1)+' kWh/m²/day']},footer:i=>{const v=i[0].parsed.y;return v>30?'🔥 Heat stress risk':v<10?'❄️ Cool season':'🌿 Comfortable growing range'}}}}}});mk2('cP','bar',L,A.p,'#b5573a',{ds:{hoverBackgroundColor:'#e0914d'},o:{plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>'🌧️ '+i[0].label,label:i=>' Rainfall: '+i.parsed.y.toFixed(2)+' mm/day',afterBody:i=>[' Approx. monthly total: '+(i[0].parsed.y*30).toFixed(0)+' mm'],footer:i=>{const v=i[0].parsed.y;return v<1?'🏜️ Dry month':v<2.5?'⛅ Moderate rainfall':'💧 Wet month'}}}}}});
+ const R=STR.map(s=>({...s,sc:score(s)})).sort((a,b)=>b.sc.tot-a.sc.tot),T=R[0];TOPR=T;
+ $('list').innerHTML=R.map((r,i)=>`<div class="rec ${i?'':'top'}"><div class="lab">0${i+1}</div><div><div class="lab" style="color:var(--acc)">${i?'Alternative strategy':'Best current match'}</div><b style="font-size:18px">${r.n}</b><div style="color:var(--mute);font-size:12px">${r.r}</div><div class="mini"><span class="tip" data-tip="Water fit: ${r.sc.w}/100 for this strategy">Water<div class="bar"><i style="width:${r.sc.w}%"></i></div></span><span class="tip" data-tip="Soil fit: ${r.sc.s}/100 for this strategy">Soil<div class="bar"><i style="width:${r.sc.s}%"></i></div></span><span class="tip" data-tip="Heat fit: ${r.sc.h}/100 for this strategy">Heat<div class="bar"><i style="width:${r.sc.h}%"></i></div></span><span class="tip" data-tip="Climate fit: ${r.sc.c}/100 for this strategy">Climate<div class="bar"><i style="width:${r.sc.c}%"></i></div></span></div></div><div class="sc">${r.sc.tot}<small>/100</small></div></div>`).join('');
+ mk2('cC','bar',R.map(r=>r.n),R.map(r=>r.sc.tot),'#e0914d',{ds:{hoverBackgroundColor:'#f4b57a'},o:{indexAxis:'y',scales:{x:{min:0,max:100}},plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>'🌾 '+i[0].label,label:i=>' Overall score: '+i.parsed.x+'/100',afterBody:i=>{const r=R[i[0].dataIndex];return[' Rotation: '+r.r,' Water: '+r.sc.w+'  ·  Soil: '+r.sc.s,' Heat: '+r.sc.h+'  ·  Climate: '+r.sc.c]},footer:i=>i[0].dataIndex===0?'⭐ Best current match':'Alternative strategy'}}}}});
+ if(ch.cR)ch.cR.destroy();ch.cR=new Chart($('cR'),{type:'radar',data:{labels:['Water','Soil','Heat','Climate'],datasets:[{data:[T.sc.w,T.sc.s,T.sc.h,T.sc.c],borderColor:'#e0914d',backgroundColor:'#e0914d55'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>T.n+' · '+i[0].label,label:i=>' Score: '+i.parsed.r+'/100',footer:i=>({Water:'How well it copes with the available water',Soil:'Fit with the selected soil profile',Heat:'Tolerance to the observed heat',Climate:'Match with the local mean temperature'})[i[0].label]}}},elements:{point:{radius:4,hoverRadius:8}},scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:'#2b362f'},angleLines:{color:'#2b362f'}}}}});
+ const why=`${T.n} is the strongest match under the current assumptions because it combines soil compatibility with the selected ${PL[S.prio].toLowerCase()} priority and ${S.water} water availability. Its model score is ${T.sc.tot}/100.`;
+ $('wName').textContent='Why '+T.n+'?';$('wWhy').textContent=why;$('wSc').textContent=T.sc.tot;$('wBar').style.width=T.sc.tot+'%';
+ $('rN').textContent=T.n;$('rC').textContent=T.r;$('exH').textContent='Why '+T.n+'?';$('exP').textContent=why+' This is a comparative decision-support result, not a guaranteed agronomic prescription.';$('exS').textContent=T.sc.tot;
+ $('trace').innerHTML=[['Farmer priority',PL[S.prio]],['NASA temperature',`${t.toFixed(2)}°C average, ${tm.toFixed(2)}°C average max`],['NASA precipitation',`${pr.toFixed(2)} mm/day, water stress ${stress.toLowerCase()}`],['Farm water profile',`${S.water} availability`],['Farm soil profile',S.soil]].map(x=>`<div class="tr"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('')}
+$('run').onclick=async()=>{refreshMap();await load();$('mapName').textContent=S.name;document.querySelector('#stats').scrollIntoView({behavior:'smooth',block:'center'})};
+function boot(){sync();initMaps();$('mapName').textContent=S.name;load()}
+if(GMAPS_KEY&&!GMAPS_KEY.startsWith('PASTE')){
+ window.__gInit=()=>{useG=true;geo=new google.maps.Geocoder();boot()};
+ window.gm_authFailure=()=>{if(!useG)return;useG=false;const f=document.createElement('iframe');f.className='map';f.id='gmap';f.style.cssText='width:100%;border:0';$('gmap').replaceWith(f);refreshMap();$('coord').textContent='Google Maps key rejected. Using the keyless Google embed.'};
+ const g=document.createElement('script');g.src=`https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&callback=__gInit`;g.onerror=boot;document.head.append(g)}
+else boot();
+</script></body></html>
